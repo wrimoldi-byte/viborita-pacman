@@ -1,2 +1,0 @@
-# viborita-pacman
-viborita
