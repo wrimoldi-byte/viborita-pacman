@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<title>Viborita Pacman - Dana</title>
+<style>html,body{margin:0;height:100%;background:#020617}iframe{border:0;width:100%;height:100%;display:block}</style>
+</head>
+<body>
+<iframe id="juego" src="index.html?v=dana1" allow="autoplay"></iframe>
+<script>
+const f=document.getElementById('juego');
+f.addEventListener('load',()=>{
+  const w=f.contentWindow;
+  try{
+    w.eval(`
+      const oldNewFood=newFood;
+      newFood=function(){oldNewFood();if(Math.random()<0.34)friendIndex=0};
+      step=function(){
+        if(gameOver)return;
+        dir=nextDir;
+        let h={x:(snake[0].x+dir.x+N)%N,y:(snake[0].y+dir.y+N)%N};
+        if(snake.some((p,i)=>i>0&&p.x===h.x&&p.y===h.y)){loseLife('¡Te chocaste con tu propia viborita!');return}
+        snake.unshift(h);
+        if(h.x===food.x&&h.y===food.y){
+          if(friendIndex===0){
+            score+=3;shield=35;scoreEl.textContent=score;
+            msg.textContent='¡Dana te protege! +3 puntos y escudo por 6 segundos';
+            sound('shield');
+          }else{
+            score++;scoreEl.textContent=score;msg.textContent='¡Compañero rescatado!';sound('eat');
+            if(score%5===0){shield=35;msg.textContent='¡Walter activó el escudo azul!';sound('shield')}
+          }
+          newFood();
+        }else snake.pop();
+        moveVillain();
+        if(h.x===villain.x&&h.y===villain.y){
+          if(shield>0){villain=rnd();score+=2;scoreEl.textContent=score;msg.textContent='¡Escudo azul! Mandaste lejos al villano.'}
+          else loseLife('¡El villano te atrapó!')
+        }
+        if(shield>0)shield--;
+        draw();
+      };
+      draw=function(){
+        x.clearRect(0,0,c.width,c.height);x.fillStyle='#020617';x.fillRect(0,0,c.width,c.height);
+        x.strokeStyle='#1e3a8a';x.lineWidth=1;
+        for(let i=0;i<=N;i++){x.beginPath();x.moveTo(i*S,0);x.lineTo(i*S,c.height);x.stroke();x.beginPath();x.moveTo(0,i*S);x.lineTo(c.width,i*S);x.stroke()}
+        for(let i=0;i<60;i++){let px=(i*7%N+.5)*S,py=(i*11%N+.5)*S;x.fillStyle='#facc15';x.beginPath();x.arc(px,py,2.5,0,7);x.fill()}
+        snake.forEach((p,i)=>{x.fillStyle=i?'#22c55e':'#a3e635';x.beginPath();x.arc((p.x+.5)*S,(p.y+.5)*S,S*(i?0.38:0.46),0,7);x.fill()});
+        let h=snake[0];x.fillStyle='#111';x.beginPath();x.arc((h.x+.35)*S,(h.y+.38)*S,3,0,7);x.arc((h.x+.65)*S,(h.y+.38)*S,3,0,7);x.fill();
+        if(friendIndex===0){
+          x.save();x.shadowColor='#38bdf8';x.shadowBlur=24;face(imgs.coworker1,food,S*.76,'#38bdf8');x.restore();
+          x.fillStyle='#e0f2fe';x.font='bold '+Math.max(14,S*.28)+'px Arial';x.textAlign='center';x.fillText('DANA', (food.x+.5)*S, Math.max(18,(food.y-.16)*S));
+        }else face(imgs['coworker'+(friendIndex+1)],food,S*.55,'#a3e635');
+        face(imgs.villain,villain,S*.62,'#ef4444');
+        if(shield>0){x.strokeStyle='#38bdf8';x.lineWidth=5;x.beginPath();x.arc((h.x+.5)*S,(h.y+.5)*S,S*.65,0,7);x.stroke();x.globalAlpha=.9;x.drawImage(imgs.hero,8,8,64,64);x.globalAlpha=1}
+      };
+      msg.textContent='Dana aparece más grande: da +3 puntos y escudo por 6 segundos.';
+      draw();
+    `);
+  }catch(e){console.error(e)}
+});
+</script>
+</body>
+</html>
