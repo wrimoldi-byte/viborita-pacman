@@ -1,1 +1,83 @@
-<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Analizador de juegos</title><style>body{font-family:system-ui;background:#07111f;color:#fff;margin:0}.w{max-width:720px;margin:auto;padding:18px}.c{background:#111827;border:1px solid #334155;border-radius:16px;padding:15px;margin:12px 0}input,select,button{width:100%;box-sizing:border-box;padding:12px;margin:6px 0;border-radius:10px;border:1px solid #475569;background:#0f172a;color:#fff;font-size:16px}button{background:#0284c7;font-weight:700}.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.games{display:grid;grid-template-columns:1fr 1fr;gap:9px}.g{padding:12px;background:#0f172a;border:1px solid #334155;border-radius:12px}.g.active{border-color:#38bdf8}.muted{color:#94a3b8}.good{color:#86efac}.bad{color:#fca5a5}@media(max-width:520px){.grid,.games{grid-template-columns:1fr}}</style></head><body><main class="w"><h1>🎯 Analizador de juegos</h1><p class="muted">Seguimiento manual de sesión. No predice premios ni juegos “calientes”.</p><section class="c"><h2>Elegí un juego</h2><input id="q" placeholder="Buscar juego"><div id="games" class="games"></div></section><section class="c"><h2>Sesión en vivo</h2><div id="chosen" class="muted">Sin juego seleccionado</div><div class="grid"><div><label>Saldo inicial</label><input id="start" type="number" value="5000"></div><div><label>Límite de pérdida</label><input id="limit" type="number" value="2000"></div></div><button id="begin">Iniciar sesión</button><div id="live" style="display:none"><div class="grid"><div><label>Saldo actual</label><input id="current" type="number"></div><div><label>Tiempo</label><input id="time" disabled value="00:00"></div></div><button id="update">Actualizar análisis</button><h3 id="result"></h3><p id="advice" class="muted"></p></div></section><section class="c"><h2>Datos del juego</h2><div id="data" class="muted">Seleccioná un juego.</div></section></main><script>const list=[['Sweet Bonanza','Slots',96.51,'Alta'],['Gates of Olympus','Slots',96.50,'Alta'],['Big Bass Bonanza','Slots',96.71,'Alta'],['Sugar Rush','Slots',96.50,'Alta'],['The Dog House','Slots',96.51,'Alta'],['Starlight Princess','Slots',96.50,'Alta'],['Ruleta europea','Mesa',97.30,'Media'],['Blackjack','Mesa',99.00,'Media'],['Baccarat','Mesa',98.94,'Media'],['Aviator / Crash','Instantáneo',97.00,'Alta']];let selected=null,started=0,timer=null;const $=x=>document.getElementById(x);function render(){let q=$('q').value.toLowerCase();$('games').innerHTML=list.map((g,i)=>({g,i})).filter(x=>x.g[0].toLowerCase().includes(q)||x.g[1].toLowerCase().includes(q)).map(x=>`<button class="g ${selected===x.i?'active':''}" onclick="pick(${x.i})"><b>${x.g[0]}</b><br><small>${x.g[1]} · RTP ${x.g[2]}% · ${x.g[3]}</small></button>`).join('')}window.pick=i=>{selected=i;let g=list[i];$('chosen').textContent='Juego: '+g[0];$('data').innerHTML=`<b>${g[0]}</b><br>Categoría: ${g[1]}<br>RTP de referencia: ${g[2]}%<br>Volatilidad: ${g[3]}<br><small>Verificá el RTP dentro de las reglas del juego en Betano.</small>`;render()};$('q').oninput=render;$('begin').onclick=()=>{if(selected===null)return alert('Elegí un juego.');started=Date.now();$('current').value=$('start').value;$('live').style.display='block';clearInterval(timer);timer=setInterval(()=>{let s=Math.floor((Date.now()-started)/1000);$('time').value=String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0')},1000);analyze()};function analyze(){let a=+$('start').value,c=+$('current').value,l=+$('limit').value,d=c-a;$('result').className=d>=0?'good':'bad';$('result').textContent=(d>=0?'Ganancia: $':'Pérdida: $')+Math.abs(d).toLocaleString('es-AR');let loss=Math.max(0,-d),pct=l?Math.round(loss/l*100):0;$('advice').textContent=loss>=l?'⛔ Alcanzaste el límite de pérdida. La recomendación es detenerte.':loss>=l*.75?'⚠️ Estás cerca del límite ('+pct+'%). Considerá terminar la sesión.':d>0?'Vas en ganancia. Podés fijar un punto de retiro para no devolverla.':'Llevás '+pct+'% del límite de pérdida.'} $('update').onclick=analyze;render();</script></body></html>
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Analizador de juegos</title>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+<style>
+:root{color-scheme:dark;--bg:#07111f;--card:#111827;--line:#334155;--field:#0f172a;--blue:#0284c7;--muted:#94a3b8;--good:#86efac;--warn:#fcd34d;--bad:#fca5a5}
+*{box-sizing:border-box}body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:#fff;margin:0}.w{max-width:760px;margin:auto;padding:16px 16px 90px}.c{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:15px;margin:12px 0}h1{font-size:27px;margin:8px 0}h2{font-size:20px;margin:4px 0 12px}input,select,button,textarea{width:100%;padding:12px;margin:6px 0;border-radius:11px;border:1px solid #475569;background:var(--field);color:#fff;font-size:16px}button{background:var(--blue);font-weight:750;cursor:pointer}button.secondary{background:#1e293b}button:disabled{opacity:.55}.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.muted{color:var(--muted)}.good{color:var(--good)}.warn{color:var(--warn)}.bad{color:var(--bad)}.notice{padding:11px;border-radius:12px;background:#172554;border:1px solid #1d4ed8;font-size:14px;line-height:1.4}.preview{width:100%;max-height:440px;object-fit:contain;border-radius:12px;background:#020617;display:none;margin-top:10px}.bar{height:10px;background:#020617;border-radius:999px;overflow:hidden;margin:8px 0}.bar>div{height:100%;width:0;background:linear-gradient(90deg,#38bdf8,#22c55e);transition:.25s}.game{padding:12px;background:var(--field);border:1px solid var(--line);border-radius:13px;margin:9px 0}.gameTop{display:flex;gap:10px;justify-content:space-between;align-items:flex-start}.badge{white-space:nowrap;padding:4px 8px;border-radius:999px;background:#1e293b;font-size:12px}.rtpInput{display:grid;grid-template-columns:1fr 110px;gap:8px;margin-top:8px}.links{display:grid;grid-template-columns:1fr 1fr;gap:8px}.links a{display:block;text-align:center;text-decoration:none;color:#fff;background:#1e293b;border:1px solid #475569;padding:10px;border-radius:10px;font-weight:700}.tabs{position:fixed;bottom:0;left:0;right:0;background:rgba(2,6,23,.96);border-top:1px solid var(--line);display:flex;justify-content:center;gap:8px;padding:8px 12px calc(8px + env(safe-area-inset-bottom))}.tabs button{max-width:230px;margin:0}.view{display:none}.view.active{display:block}.small{font-size:13px;line-height:1.42}@media(max-width:540px){.grid,.links{grid-template-columns:1fr}.rtpInput{grid-template-columns:1fr 95px}}
+</style>
+</head>
+<body>
+<main class="w">
+<h1>🎯 Analizador de juegos</h1>
+<p class="muted">Lee una captura, identifica los juegos y los ordena por RTP de referencia. No predice cuál pagará en el próximo giro.</p>
+<div class="notice"><b>Importante:</b> el RTP es un promedio teórico de muchísimas jugadas. El casino puede usar una configuración distinta; confirmalo dentro de “Información” o “Reglas” del juego.</div>
+
+<section id="capture" class="view active">
+ <div class="c">
+  <h2>1. Subir captura</h2>
+  <input id="shot" type="file" accept="image/*">
+  <img id="preview" class="preview" alt="Vista previa">
+  <button id="readBtn" disabled>🔎 Leer juegos de la captura</button>
+  <div id="progressWrap" style="display:none"><div class="bar"><div id="progress"></div></div><div id="status" class="muted small"></div></div>
+ </div>
+ <div class="c">
+  <h2>2. Juegos detectados</h2>
+  <p class="muted small">Revisá los nombres. Podés corregirlos antes de comparar.</p>
+  <div id="detected"><span class="muted">Todavía no se analizó ninguna captura.</span></div>
+  <button id="compareBtn" style="display:none">Comparar RTP</button>
+ </div>
+</section>
+
+<section id="compare" class="view">
+ <div class="c">
+  <h2>Comparación</h2>
+  <div id="results" class="muted">Primero cargá y analizá una captura.</div>
+ </div>
+</section>
+
+<section id="session" class="view">
+ <div class="c">
+  <h2>Control de sesión</h2>
+  <div class="grid"><div><label>Saldo inicial</label><input id="start" type="number" value="5000"></div><div><label>Límite de pérdida</label><input id="limit" type="number" value="2000"></div></div>
+  <button id="begin">Iniciar sesión</button>
+  <div id="live" style="display:none"><div class="grid"><div><label>Saldo actual</label><input id="current" type="number"></div><div><label>Tiempo</label><input id="time" disabled value="00:00"></div></div><button id="update">Actualizar</button><h3 id="sessionResult"></h3><p id="advice" class="muted"></p></div>
+ </div>
+</section>
+</main>
+<nav class="tabs"><button data-view="capture" class="active">📷 Captura</button><button data-view="compare">📊 Comparar</button><button data-view="session">⏱️ Sesión</button></nav>
+<script>
+const $=id=>document.getElementById(id);
+const catalog=[
+ {name:'Sweet Argentina',aliases:['sweet argentina'],rtp:null,provider:'No identificado'},
+ {name:'Jump!',aliases:['jump','jump!'],rtp:null,provider:'No identificado'},
+ {name:'Buckshot Wilds',aliases:['buckshot wilds','buckshot'],rtp:96.04,rtpMin:94.00,provider:'NetEnt',source:'RTP publicado con varias configuraciones'},
+ {name:"Kemet's Treasures",aliases:["kemet's treasures",'kemets treasures','kemet treasures'],rtp:null,provider:'No identificado'},
+ {name:'Panda Panda',aliases:['panda panda'],rtp:null,provider:'No identificado'},
+ {name:'40 Golden Coins',aliases:['40 golden coins','golden coins'],rtp:null,provider:'No identificado'},
+ {name:"Ocean's Call",aliases:["ocean's call",'oceans call'],rtp:null,provider:'No identificado'},
+ {name:'Easter Frog',aliases:['easter frog'],rtp:null,provider:'No identificado'},
+ {name:'Sweet Bonanza',aliases:['sweet bonanza'],rtp:96.51,provider:'Pragmatic Play'},
+ {name:'Gates of Olympus',aliases:['gates of olympus'],rtp:96.50,provider:'Pragmatic Play'},
+ {name:'Big Bass Bonanza',aliases:['big bass bonanza'],rtp:96.71,provider:'Pragmatic Play'},
+ {name:'Sugar Rush',aliases:['sugar rush'],rtp:96.50,provider:'Pragmatic Play'}
+];
+let imageFile=null, detected=[];
+const norm=s=>(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,' ').trim();
+function levenshtein(a,b){a=norm(a);b=norm(b);const m=Array.from({length:b.length+1},(_,i)=>[i]);for(let j=0;j<=a.length;j++)m[0][j]=j;for(let i=1;i<=b.length;i++)for(let j=1;j<=a.length;j++)m[i][j]=b[i-1]===a[j-1]?m[i-1][j-1]:1+Math.min(m[i-1][j],m[i][j-1],m[i-1][j-1]);return m[b.length][a.length]}
+function findGames(text){const n=norm(text),lines=text.split(/\n+/).map(x=>x.trim()).filter(Boolean);let found=[];for(const g of catalog){if(g.aliases.some(a=>n.includes(norm(a))))found.push(g.name)}for(const line of lines){if(line.length<3||line.length>35)continue;let best=null,score=99;for(const g of catalog)for(const a of g.aliases){const d=levenshtein(line,a),r=d/Math.max(norm(line).length,norm(a).length);if(r<score){score=r;best=g.name}}if(score<=.32)found.push(best)}return [...new Set(found)]}
+function renderDetected(){if(!detected.length){$('detected').innerHTML='<span class="warn">No pude reconocer juegos. Probá con una captura más nítida o agregalos manualmente.</span>';detected=[''];}$('detected').innerHTML=detected.map((n,i)=>`<div class="rtpInput"><input value="${n.replace(/"/g,'&quot;')}" data-i="${i}" placeholder="Nombre del juego"><button class="secondary" onclick="removeGame(${i})">Quitar</button></div>`).join('')+`<button class="secondary" onclick="addGame()">+ Agregar juego</button>`;$('compareBtn').style.display='block';document.querySelectorAll('#detected input').forEach(x=>x.oninput=e=>detected[+e.target.dataset.i]=e.target.value)}
+window.addGame=()=>{detected.push('');renderDetected()};window.removeGame=i=>{detected.splice(i,1);renderDetected()};
+$('shot').onchange=e=>{imageFile=e.target.files[0]||null;if(!imageFile)return;let u=URL.createObjectURL(imageFile);$('preview').src=u;$('preview').style.display='block';$('readBtn').disabled=false};
+$('readBtn').onclick=async()=>{if(!imageFile)return;$('readBtn').disabled=true;$('progressWrap').style.display='block';$('status').textContent='Preparando lector…';try{const out=await Tesseract.recognize(imageFile,'eng',{logger:m=>{if(m.status==='recognizing text'){let p=Math.round((m.progress||0)*100);$('progress').style.width=p+'%';$('status').textContent='Leyendo texto: '+p+'%'}}});detected=findGames(out.data.text);renderDetected();$('status').textContent='Lectura terminada. Revisá los nombres detectados.'}catch(e){$('status').textContent='No se pudo leer la imagen. Revisá la conexión e intentá otra vez.'}finally{$('readBtn').disabled=false}};
+function classify(rtp){if(rtp==null)return ['No verificado','warn'];if(rtp>=97)return ['Alto','good'];if(rtp>=96)return ['Normal','good'];return ['Bajo','bad']}
+function getData(name){let n=norm(name),best=null,score=99;for(const g of catalog){for(const a of g.aliases){let r=levenshtein(n,a)/Math.max(n.length,norm(a).length);if(n.includes(norm(a))||norm(a).includes(n))r*=.5;if(r<score){score=r;best=g}}}return score<.42?best:{name:name,rtp:null,provider:'No identificado'}}
+function renderResults(){let rows=detected.map(x=>x.trim()).filter(Boolean).map(getData);rows.sort((a,b)=>(b.rtp??-1)-(a.rtp??-1));if(!rows.length){$('results').innerHTML='<span class="warn">No hay juegos para comparar.</span>';return}$('results').innerHTML=rows.map((g,i)=>{const [label,cls]=classify(g.rtp);const range=g.rtpMin!=null?`${g.rtpMin.toFixed(2)}%–${g.rtp.toFixed(2)}%`:g.rtp!=null?g.rtp.toFixed(2)+'%':'Sin dato confirmado';const q=encodeURIComponent('"'+g.name+'" slot RTP provider official');return `<article class="game"><div class="gameTop"><div><b>${i+1}. ${g.name}</b><div class="muted small">Proveedor: ${g.provider||'No identificado'}</div></div><span class="badge ${cls}">${label}</span></div><h3 class="${cls}" style="margin:10px 0 4px">RTP ${range}</h3>${g.rtpMin!=null?'<div class="warn small">Este juego tiene distintas configuraciones. Betano puede usar una versión menor.</div>':''}<div class="links"><a target="_blank" rel="noopener" href="https://www.google.com/search?q=${q}">Buscar RTP en web</a><a target="_blank" rel="noopener" href="https://www.google.com/search?q=${encodeURIComponent('site:betano.com '+g.name+' RTP')}">Buscar en Betano</a></div></article>`}).join('')+'<p class="muted small">Los resultados guardados son referencias. Abrí las reglas del juego dentro de Betano para comprobar el RTP exacto activo.</p>'}
+$('compareBtn').onclick=()=>{renderResults();switchView('compare')};
+function switchView(id){document.querySelectorAll('.view').forEach(v=>v.classList.toggle('active',v.id===id));document.querySelectorAll('.tabs button').forEach(b=>b.classList.toggle('active',b.dataset.view===id))}document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>switchView(b.dataset.view));
+let started=0,timer=null;$('begin').onclick=()=>{started=Date.now();$('current').value=$('start').value;$('live').style.display='block';clearInterval(timer);timer=setInterval(()=>{let s=Math.floor((Date.now()-started)/1000);$('time').value=String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0')},1000);analyzeSession()};function analyzeSession(){let a=+$('start').value,c=+$('current').value,l=+$('limit').value,d=c-a;$('sessionResult').className=d>=0?'good':'bad';$('sessionResult').textContent=(d>=0?'Ganancia: $':'Pérdida: $')+Math.abs(d).toLocaleString('es-AR');let loss=Math.max(0,-d),pct=l?Math.round(loss/l*100):0;$('advice').textContent=loss>=l?'⛔ Alcanzaste el límite de pérdida. La recomendación es detenerte.':loss>=l*.75?'⚠️ Estás cerca del límite ('+pct+'%). Considerá terminar la sesión.':d>0?'Vas en ganancia. Fijá un punto de retiro para no devolverla.':'Llevás '+pct+'% del límite de pérdida.'}$('update').onclick=analyzeSession;
+</script>
+</body></html>
